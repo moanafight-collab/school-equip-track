@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { format, endOfDay } from "date-fns";
+import { format, addHours } from "date-fns";
 
 interface BorrowDialogProps {
   open: boolean;
@@ -12,12 +12,12 @@ interface BorrowDialogProps {
 
 export const BorrowDialog = ({ open, onOpenChange, onConfirm, itemName, isSubmitting = false }: BorrowDialogProps) => {
   const handleConfirm = () => {
-    // Automatically set due date to end of day (11:59 PM)
-    const dueDate = endOfDay(new Date());
+    // Automatically set due date to 8 hours from now
+    const dueDate = addHours(new Date(), 8);
     onConfirm(dueDate);
   };
 
-  const dueDate = endOfDay(new Date());
+  const dueDate = addHours(new Date(), 8);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -31,7 +31,7 @@ export const BorrowDialog = ({ open, onOpenChange, onConfirm, itemName, isSubmit
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              This item must be returned by the end of today.
+              This item must be returned within 8 hours.
             </p>
             <p className="text-sm font-medium">
               Due: {format(dueDate, "PPP 'at' p")}

@@ -60,7 +60,7 @@ export const EquipmentCard = ({ item, onBorrow, canBorrow, isStaff, onDelete, on
             disabled={item.status !== "available" || !canBorrow}
             className="w-full"
           >
-            Borrow
+            {item.status === "available" ? "Borrow" : item.status === "borrowed" ? "Borrowed" : "Not Available"}
           </Button>
         ) : (
           <>
