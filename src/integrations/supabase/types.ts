@@ -16,7 +16,6 @@ export type Database = {
     Tables: {
       items: {
         Row: {
-          borrowed_by: string | null
           category: string
           created_at: string
           description: string | null
@@ -27,7 +26,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          borrowed_by?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -38,7 +36,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          borrowed_by?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -48,22 +45,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["item_status"]
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "items_borrowed_by_fkey"
-            columns: ["borrowed_by"]
-            isOneToOne: false
-            referencedRelation: "borrowed_equipment_view"
-            referencedColumns: ["borrower_profile_id"]
-          },
-          {
-            foreignKeyName: "items_borrowed_by_fkey"
-            columns: ["borrowed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       loans: {
         Row: {
@@ -107,22 +89,8 @@ export type Database = {
             foreignKeyName: "loans_borrower_id_fkey"
             columns: ["borrower_id"]
             isOneToOne: false
-            referencedRelation: "borrowed_equipment_view"
-            referencedColumns: ["borrower_profile_id"]
-          },
-          {
-            foreignKeyName: "loans_borrower_id_fkey"
-            columns: ["borrower_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loans_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "borrowed_equipment_view"
-            referencedColumns: ["item_id"]
           },
           {
             foreignKeyName: "loans_item_id_fkey"
@@ -163,22 +131,8 @@ export type Database = {
             foreignKeyName: "notifications_loan_id_fkey"
             columns: ["loan_id"]
             isOneToOne: false
-            referencedRelation: "borrowed_equipment_view"
-            referencedColumns: ["loan_id"]
-          },
-          {
-            foreignKeyName: "notifications_loan_id_fkey"
-            columns: ["loan_id"]
-            isOneToOne: false
             referencedRelation: "loans"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "borrowed_equipment_view"
-            referencedColumns: ["borrower_profile_id"]
           },
           {
             foreignKeyName: "notifications_user_id_fkey"
@@ -239,22 +193,7 @@ export type Database = {
       }
     }
     Views: {
-      borrowed_equipment_view: {
-        Row: {
-          borrowed_at: string | null
-          borrowed_by_name: string | null
-          borrower_profile_id: string | null
-          due_date: string | null
-          equipment_name: string | null
-          is_overdue: boolean | null
-          item_id: string | null
-          loan_id: string | null
-          loan_status: Database["public"]["Enums"]["loan_status"] | null
-          returned_at: string | null
-          status: Database["public"]["Enums"]["item_status"] | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_overdue_loans: {
@@ -266,10 +205,6 @@ export type Database = {
           _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
-        Returns: boolean
-      }
-      item_has_active_loan: {
-        Args: { item_uuid: string }
         Returns: boolean
       }
     }
