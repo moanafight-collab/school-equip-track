@@ -149,7 +149,6 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          role: Database["public"]["Enums"]["user_role"]
           updated_at: string
           user_id: string
         }
@@ -158,7 +157,6 @@ export type Database = {
           email: string
           full_name: string
           id?: string
-          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id: string
         }
@@ -167,8 +165,28 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
-          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
           user_id?: string
         }
         Relationships: []
@@ -181,6 +199,13 @@ export type Database = {
       check_overdue_loans: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

@@ -8,6 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { BookOpen } from "lucide-react";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z.string().email("Invalid email address").max(255, "Email too long"),
+  password: z.string().min(6, "Password must be at least 6 characters").max(100, "Password too long"),
+  fullName: z.string().min(1, "Name is required").max(100, "Name too long").optional(),
+});
 
 export const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -23,6 +30,20 @@ export const AuthForm = () => {
     setLoading(true);
 
     try {
+      // Validate input
+      const validation = authSchema.safeParse({
+        email,
+        password,
+        fullName: isLogin ? undefined : fullName,
+      });
+
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast.error(firstError.message);
+        setLoading(false);
+        return;
+      }
+
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email,

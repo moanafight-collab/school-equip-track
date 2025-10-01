@@ -13,6 +13,7 @@ import { toast } from "sonner";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>("");
   const [items, setItems] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,6 +40,17 @@ const Dashboard = () => {
       .single();
 
     setProfile(profileData);
+
+    // Fetch user role from user_roles table
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (roleData) {
+      setUserRole(roleData.role);
+    }
   };
 
   const fetchData = async () => {
@@ -129,7 +141,7 @@ const Dashboard = () => {
             <div>
               <h1 className="text-2xl font-bold">Equipment Loan System</h1>
               <p className="text-sm text-muted-foreground">
-                Welcome, {profile?.full_name} ({profile?.role})
+                Welcome, {profile?.full_name} {userRole && `(${userRole})`}
               </p>
             </div>
             <Button variant="outline" onClick={handleSignOut}>
