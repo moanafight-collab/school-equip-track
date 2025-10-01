@@ -207,10 +207,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      item_has_active_loan: {
-        Args: { item_uuid: string }
-        Returns: boolean
-      }
     }
     Enums: {
       item_status: "available" | "borrowed" | "maintenance"

@@ -7,10 +7,9 @@ interface BorrowDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: (dueDate: Date) => void;
   itemName: string;
-  isSubmitting?: boolean;
 }
 
-export const BorrowDialog = ({ open, onOpenChange, onConfirm, itemName, isSubmitting = false }: BorrowDialogProps) => {
+export const BorrowDialog = ({ open, onOpenChange, onConfirm, itemName }: BorrowDialogProps) => {
   const handleConfirm = () => {
     // Automatically set due date to 8 hours from now
     const dueDate = addHours(new Date(), 8);
@@ -39,11 +38,11 @@ export const BorrowDialog = ({ open, onOpenChange, onConfirm, itemName, isSubmit
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? "Borrowing..." : "Confirm Borrow"}
+          <Button onClick={handleConfirm}>
+            Confirm Borrow
           </Button>
         </DialogFooter>
       </DialogContent>

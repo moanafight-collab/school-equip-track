@@ -22,7 +22,6 @@ const Dashboard = () => {
   const [borrowDialogOpen, setBorrowDialogOpen] = useState(false);
   const [addEquipmentDialogOpen, setAddEquipmentDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [borrowing, setBorrowing] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -58,40 +57,13 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // Fetch user's profile to get profile.id
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("user_id", session.user.id)
-        .single();
-
-      // Fetch user role
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .single();
-
-      const isStudent = roleData?.role === "student";
-
-      // Build loans query based on role
-      let loansQuery = supabase
-        .from("loans")
-        .select("*, items(name), profiles(full_name)")
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      // Students only see their own loans
-      if (isStudent && profileData) {
-        loansQuery = loansQuery.eq("borrower_id", profileData.id);
-      }
-
       const [itemsRes, loansRes] = await Promise.all([
         supabase.from("items").select("*").order("name"),
-        loansQuery,
+        supabase
+          .from("loans")
+          .select("*, items(name), profiles(full_name)")
+          .order("created_at", { ascending: false })
+          .limit(5),
       ]);
 
       if (itemsRes.data) setItems(itemsRes.data);
@@ -115,40 +87,9 @@ const Dashboard = () => {
   };
 
   const handleBorrowConfirm = async (dueDate: Date) => {
-    if (!profile || !selectedItem || borrowing) return;
+    if (!profile || !selectedItem) return;
 
-    setBorrowing(true);
     try {
-      // Double-check item status and if there's an active loan
-      const { data: itemCheck } = await supabase
-        .from("items")
-        .select("status")
-        .eq("id", selectedItem.id)
-        .single();
-
-      if (itemCheck?.status !== "available") {
-        toast.error("This item is no longer available");
-        setBorrowDialogOpen(false);
-        fetchData();
-        return;
-      }
-
-      // Check for active loans
-      const { data: activeLoan } = await supabase
-        .from("loans")
-        .select("id")
-        .eq("item_id", selectedItem.id)
-        .eq("status", "active")
-        .maybeSingle();
-
-      if (activeLoan) {
-        toast.error("This item is already borrowed");
-        setBorrowDialogOpen(false);
-        fetchData();
-        return;
-      }
-
-      // Create loan and update item status in a transaction-like manner
       const { error: loanError } = await supabase.from("loans").insert({
         item_id: selectedItem.id,
         borrower_id: profile.id,
@@ -169,9 +110,7 @@ const Dashboard = () => {
       setBorrowDialogOpen(false);
       fetchData();
     } catch (error: any) {
-      toast.error(error.message || "Failed to borrow item");
-    } finally {
-      setBorrowing(false);
+      toast.error(error.message);
     }
   };
 
@@ -342,7 +281,6 @@ const Dashboard = () => {
           onOpenChange={setBorrowDialogOpen}
           onConfirm={handleBorrowConfirm}
           itemName={selectedItem.name}
-          isSubmitting={borrowing}
         />
       )}
 
