@@ -119,6 +119,36 @@ const Dashboard = () => {
 
     setBorrowing(true);
     try {
+      // Double-check item status and if there's an active loan
+      const { data: itemCheck } = await supabase
+        .from("items")
+        .select("status")
+        .eq("id", selectedItem.id)
+        .single();
+
+      if (itemCheck?.status !== "available") {
+        toast.error("This item is no longer available");
+        setBorrowDialogOpen(false);
+        fetchData();
+        return;
+      }
+
+      // Check for active loans
+      const { data: activeLoan } = await supabase
+        .from("loans")
+        .select("id")
+        .eq("item_id", selectedItem.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (activeLoan) {
+        toast.error("This item is already borrowed");
+        setBorrowDialogOpen(false);
+        fetchData();
+        return;
+      }
+
+      // Create loan and update item status in a transaction-like manner
       const { error: loanError } = await supabase.from("loans").insert({
         item_id: selectedItem.id,
         borrower_id: profile.id,
@@ -139,7 +169,7 @@ const Dashboard = () => {
       setBorrowDialogOpen(false);
       fetchData();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Failed to borrow item");
     } finally {
       setBorrowing(false);
     }
