@@ -7,18 +7,20 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    // Listen for auth state changes
+    // Listen for auth state changes FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         navigate("/dashboard");
       }
+    });
+
+    // Then verify current user (server-validated) to avoid stale local sessions
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        navigate("/dashboard");
+      }
+    }).catch(() => {
+      // ignore
     });
 
     return () => subscription.unsubscribe();

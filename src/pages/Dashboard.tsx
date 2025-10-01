@@ -45,11 +45,11 @@ const Dashboard = () => {
 
   const checkAuth = async () => {
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
         // Clear any stale session data
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'global' });
         navigate("/auth");
         return;
       }
@@ -57,12 +57,12 @@ const Dashboard = () => {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", session.user.id)
+        .eq("user_id", user.id)
         .single();
 
       if (profileError) {
         toast.error("Failed to load profile");
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'global' });
         navigate("/auth");
         return;
       }
@@ -73,7 +73,7 @@ const Dashboard = () => {
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", session.user.id)
+        .eq("user_id", user.id)
         .single();
 
       if (roleData) {
@@ -81,7 +81,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("Auth check error:", error);
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'global' });
       navigate("/auth");
     }
   };
@@ -164,7 +164,7 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) throw error;
       
       // Clear local state
