@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { RecentLoans } from "@/components/dashboard/RecentLoans";
+import { BorrowedEquipmentTable } from "@/components/dashboard/BorrowedEquipmentTable";
 import { EquipmentCard } from "@/components/equipment/EquipmentCard";
 import { BorrowDialog } from "@/components/equipment/BorrowDialog";
 import { AddEquipmentDialog } from "@/components/equipment/AddEquipmentDialog";
@@ -17,6 +18,7 @@ const Dashboard = () => {
   const [userRole, setUserRole] = useState<string>("");
   const [items, setItems] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
+  const [borrowedEquipment, setBorrowedEquipment] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [borrowDialogOpen, setBorrowDialogOpen] = useState(false);
@@ -95,6 +97,36 @@ const Dashboard = () => {
 
       if (itemsRes.data) setItems(itemsRes.data);
       if (loansRes.data) setLoans(loansRes.data);
+
+      // For staff, fetch all active loans with borrower details
+      if (!isStudent) {
+        const { data: borrowedData } = await supabase
+          .from("loans")
+          .select(`
+            id,
+            item_id,
+            borrowed_at,
+            due_date,
+            status,
+            items(name),
+            profiles(full_name)
+          `)
+          .eq("status", "active")
+          .order("borrowed_at", { ascending: false });
+
+        if (borrowedData) {
+          const formattedBorrowed = borrowedData.map((loan: any) => ({
+            loan_id: loan.id,
+            item_id: loan.item_id,
+            equipment_name: loan.items.name,
+            borrowed_by_name: loan.profiles.full_name,
+            borrowed_at: loan.borrowed_at,
+            due_date: loan.due_date,
+            status: loan.status,
+          }));
+          setBorrowedEquipment(formattedBorrowed);
+        }
+      }
     } catch (error: any) {
       toast.error("Failed to load data");
     } finally {
@@ -158,7 +190,10 @@ const Dashboard = () => {
 
       const { error: itemError } = await supabase
         .from("items")
-        .update({ status: "borrowed" })
+        .update({ 
+          status: "borrowed",
+          borrowed_by: profile.id 
+        })
         .eq("id", selectedItem.id);
 
       if (itemError) throw itemError;
@@ -233,10 +268,13 @@ const Dashboard = () => {
         if (loanError) throw loanError;
       }
 
-      // Update item status
+      // Update item status and clear borrowed_by
       const { error: itemError } = await supabase
         .from("items")
-        .update({ status: "available" })
+        .update({ 
+          status: "available",
+          borrowed_by: null 
+        })
         .eq("id", itemId);
 
       if (itemError) throw itemError;
@@ -290,6 +328,13 @@ const Dashboard = () => {
 
       <main className="container mx-auto px-4 py-8 space-y-8">
         <DashboardStats {...stats} />
+
+        {(userRole === "staff" || userRole === "admin") && (
+          <BorrowedEquipmentTable 
+            borrowedEquipment={borrowedEquipment}
+            onReturn={handleReturnItem}
+          />
+        )}
 
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
