@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       items: {
         Row: {
+          borrowed_by: string | null
           category: string
           created_at: string
           description: string | null
@@ -26,6 +27,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          borrowed_by?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -36,6 +38,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          borrowed_by?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -45,7 +48,15 @@ export type Database = {
           status?: Database["public"]["Enums"]["item_status"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "items_borrowed_by_fkey"
+            columns: ["borrowed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       loans: {
         Row: {
@@ -205,6 +216,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      item_has_active_loan: {
+        Args: { item_uuid: string }
         Returns: boolean
       }
     }
