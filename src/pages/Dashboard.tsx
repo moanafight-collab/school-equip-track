@@ -5,9 +5,10 @@ import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { RecentLoans } from "@/components/dashboard/RecentLoans";
 import { EquipmentCard } from "@/components/equipment/EquipmentCard";
 import { BorrowDialog } from "@/components/equipment/BorrowDialog";
+import { AddEquipmentDialog } from "@/components/equipment/AddEquipmentDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, Search } from "lucide-react";
+import { LogOut, Search, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 const Dashboard = () => {
@@ -19,6 +20,7 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [borrowDialogOpen, setBorrowDialogOpen] = useState(false);
+  const [addEquipmentDialogOpen, setAddEquipmentDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -112,6 +114,81 @@ const Dashboard = () => {
     }
   };
 
+  const handleAddEquipment = async (data: { name: string; category: string; description: string; serialNumber: string }) => {
+    try {
+      const { error } = await supabase.from("items").insert({
+        name: data.name,
+        category: data.category,
+        description: data.description || null,
+        serial_number: data.serialNumber || null,
+        status: "available",
+      });
+
+      if (error) throw error;
+
+      toast.success("Equipment added successfully");
+      setAddEquipmentDialogOpen(false);
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDeleteEquipment = async (itemId: string) => {
+    if (!confirm("Are you sure you want to delete this equipment?")) return;
+
+    try {
+      const { error } = await supabase.from("items").delete().eq("id", itemId);
+
+      if (error) throw error;
+
+      toast.success("Equipment deleted successfully");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleReturnItem = async (itemId: string) => {
+    try {
+      // Find active loan for this item
+      const { data: activeLoan, error: loanFindError } = await supabase
+        .from("loans")
+        .select("id")
+        .eq("item_id", itemId)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (loanFindError) throw loanFindError;
+
+      if (activeLoan) {
+        // Update loan status
+        const { error: loanError } = await supabase
+          .from("loans")
+          .update({ 
+            status: "returned",
+            returned_at: new Date().toISOString()
+          })
+          .eq("id", activeLoan.id);
+
+        if (loanError) throw loanError;
+      }
+
+      // Update item status
+      const { error: itemError } = await supabase
+        .from("items")
+        .update({ status: "available" })
+        .eq("id", itemId);
+
+      if (itemError) throw itemError;
+
+      toast.success("Item marked as returned");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   const filteredItems = items.filter(
     (item) =>
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -158,7 +235,15 @@ const Dashboard = () => {
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             <div>
-              <h2 className="text-xl font-semibold mb-4">Available Equipment</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Equipment Inventory</h2>
+                {(userRole === "staff" || userRole === "admin") && (
+                  <Button onClick={() => setAddEquipmentDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Equipment
+                  </Button>
+                )}
+              </div>
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -174,7 +259,10 @@ const Dashboard = () => {
                     key={item.id}
                     item={item}
                     onBorrow={handleBorrowClick}
-                    canBorrow={true}
+                    canBorrow={userRole === "student"}
+                    isStaff={userRole === "staff" || userRole === "admin"}
+                    onDelete={userRole === "staff" || userRole === "admin" ? handleDeleteEquipment : undefined}
+                    onReturn={userRole === "staff" || userRole === "admin" ? handleReturnItem : undefined}
                   />
                 ))}
               </div>
@@ -195,6 +283,12 @@ const Dashboard = () => {
           itemName={selectedItem.name}
         />
       )}
+
+      <AddEquipmentDialog
+        open={addEquipmentDialogOpen}
+        onOpenChange={setAddEquipmentDialogOpen}
+        onConfirm={handleAddEquipment}
+      />
     </div>
   );
 };

@@ -1,12 +1,6 @@
-import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { format, addHours } from "date-fns";
 
 interface BorrowDialogProps {
   open: boolean;
@@ -16,14 +10,13 @@ interface BorrowDialogProps {
 }
 
 export const BorrowDialog = ({ open, onOpenChange, onConfirm, itemName }: BorrowDialogProps) => {
-  const [dueDate, setDueDate] = useState<Date>();
-
   const handleConfirm = () => {
-    if (dueDate) {
-      onConfirm(dueDate);
-      setDueDate(undefined);
-    }
+    // Automatically set due date to 8 hours from now
+    const dueDate = addHours(new Date(), 8);
+    onConfirm(dueDate);
   };
+
+  const dueDate = addHours(new Date(), 8);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -36,37 +29,19 @@ export const BorrowDialog = ({ open, onOpenChange, onConfirm, itemName }: Borrow
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Return Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dueDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate ? format(dueDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={setDueDate}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <p className="text-sm text-muted-foreground">
+              This item must be returned within 8 hours.
+            </p>
+            <p className="text-sm font-medium">
+              Due: {format(dueDate, "PPP 'at' p")}
+            </p>
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!dueDate}>
+          <Button onClick={handleConfirm}>
             Confirm Borrow
           </Button>
         </DialogFooter>

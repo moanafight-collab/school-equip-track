@@ -1,7 +1,7 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package2 } from "lucide-react";
+import { Package2, Trash2 } from "lucide-react";
 
 interface EquipmentCardProps {
   item: {
@@ -13,9 +13,12 @@ interface EquipmentCardProps {
   };
   onBorrow: (id: string) => void;
   canBorrow: boolean;
+  isStaff?: boolean;
+  onDelete?: (id: string) => void;
+  onReturn?: (id: string) => void;
 }
 
-export const EquipmentCard = ({ item, onBorrow, canBorrow }: EquipmentCardProps) => {
+export const EquipmentCard = ({ item, onBorrow, canBorrow, isStaff, onDelete, onReturn }: EquipmentCardProps) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "available":
@@ -50,14 +53,37 @@ export const EquipmentCard = ({ item, onBorrow, canBorrow }: EquipmentCardProps)
           {item.description || "No description available"}
         </p>
       </CardContent>
-      <CardFooter>
-        <Button
-          onClick={() => onBorrow(item.id)}
-          disabled={item.status !== "available" || !canBorrow}
-          className="w-full"
-        >
-          {item.status === "available" ? "Borrow" : "Not Available"}
-        </Button>
+      <CardFooter className="flex gap-2">
+        {!isStaff ? (
+          <Button
+            onClick={() => onBorrow(item.id)}
+            disabled={item.status !== "available" || !canBorrow}
+            className="w-full"
+          >
+            {item.status === "available" ? "Borrow" : "Not Available"}
+          </Button>
+        ) : (
+          <>
+            {item.status === "borrowed" && onReturn && (
+              <Button
+                onClick={() => onReturn(item.id)}
+                variant="default"
+                className="flex-1"
+              >
+                Mark as Returned
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                onClick={() => onDelete(item.id)}
+                variant="destructive"
+                size="icon"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </>
+        )}
       </CardFooter>
     </Card>
   );
