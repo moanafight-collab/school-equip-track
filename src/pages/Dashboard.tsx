@@ -245,25 +245,24 @@ const Dashboard = () => {
 
   const handleReturnItem = async (itemId: string) => {
     try {
-      // Find active loan for this item
-      const { data: activeLoan, error: loanFindError } = await supabase
+      // Find all active loans for this item (in case there are multiple)
+      const { data: activeLoans, error: loanFindError } = await supabase
         .from("loans")
         .select("id")
         .eq("item_id", itemId)
-        .eq("status", "active")
-        .maybeSingle();
+        .eq("status", "active");
 
       if (loanFindError) throw loanFindError;
 
-      if (activeLoan) {
-        // Update loan status
+      if (activeLoans && activeLoans.length > 0) {
+        // Update all active loans to returned status
         const { error: loanError } = await supabase
           .from("loans")
           .update({ 
             status: "returned",
             returned_at: new Date().toISOString()
           })
-          .eq("id", activeLoan.id);
+          .in("id", activeLoans.map(loan => loan.id));
 
         if (loanError) throw loanError;
       }
