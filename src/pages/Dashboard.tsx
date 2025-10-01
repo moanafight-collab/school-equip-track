@@ -29,32 +29,60 @@ const Dashboard = () => {
   useEffect(() => {
     checkAuth();
     fetchData();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate("/auth");
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        checkAuth();
+        fetchData();
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        // Clear any stale session data
+        await supabase.auth.signOut();
+        navigate("/auth");
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (profileError) {
+        toast.error("Failed to load profile");
+        await supabase.auth.signOut();
+        navigate("/auth");
+        return;
+      }
+
+      setProfile(profileData);
+
+      // Fetch user role from user_roles table
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (roleData) {
+        setUserRole(roleData.role);
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+      await supabase.auth.signOut();
       navigate("/auth");
-      return;
-    }
-
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .single();
-
-    setProfile(profileData);
-
-    // Fetch user role from user_roles table
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .single();
-
-    if (roleData) {
-      setUserRole(roleData.role);
     }
   };
 
@@ -135,8 +163,22 @@ const Dashboard = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Clear local state
+      setProfile(null);
+      setUserRole("");
+      setItems([]);
+      setLoans([]);
+      setBorrowedEquipment([]);
+      
+      navigate("/auth");
+    } catch (error: any) {
+      toast.error("Sign out failed");
+      console.error("Sign out error:", error);
+    }
   };
 
   const handleBorrowClick = (itemId: string) => {
